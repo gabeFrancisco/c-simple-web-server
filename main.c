@@ -11,6 +11,7 @@
 #include <unistd.h>     // Unix syscalls
 #include <sys/socket.h> // Sockets definitions
 #include <netinet/in.h> // Struct for addresses storage
+#include <asm-generic/socket.h>
 
 // Constants
 
@@ -38,9 +39,9 @@ int main()
 
     char *test = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Lenght: 12\r\n\r\nHello World.God bless you!";
 
-    // -----------------------------------
+    // -----------------------------------------------------------------
     // 1 - Socket creation
-    // -----------------------------------
+    // -----------------------------------------------------------------
     // AF_INET      = IPv4
     // SOCK_STREAM  = TCP
     // 0            = Protocol(0 lets the system chose de standard to TCP)
@@ -50,4 +51,28 @@ int main()
         perror("Error while creating the socket");
         exit(EXIT_FAILURE);
     }
+
+    // -----------------------------------------------------------------
+    // 2 - Socket options config
+    // -----------------------------------------------------------------
+    // Prevents the "Address already in use" error while restarting the server
+    // It reutilizes the port and address at the time
+    int opt = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        perror("Error in setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    // -----------------------------------------------------------------
+    // 3 - Defining the address
+    // -----------------------------------------------------------------
+
+    address.sin_family = AF_INET; // IPv4 family
+
+    // Accepts connections of any network interface
+    address.sin_addr.s_addr = INADDR_ANY;
+
+    // Converts the port number to network order
+    address.sin_port - htons(PORT);
 }
