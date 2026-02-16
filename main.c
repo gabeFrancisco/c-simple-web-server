@@ -60,7 +60,7 @@ int main()
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     {
-        perror("Error in setsockopt");
+        perror("Fail in setsockopt");
         exit(EXIT_FAILURE);
     }
 
@@ -74,5 +74,61 @@ int main()
     address.sin_addr.s_addr = INADDR_ANY;
 
     // Converts the port number to network order
-    address.sin_port - htons(PORT);
+    address.sin_port = htons(PORT);
+
+    // -----------------------------------------------------------------
+    // 4 - Bind
+    // -----------------------------------------------------------------
+    // Glue the socket to the PORT and the address defined above
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        perror("Failed to bind!");
+        exit(EXIT_FAILURE);
+    }
+
+    // -----------------------------------------------------------------
+    // 5 - Listen
+    // -----------------------------------------------------------------
+    // Puts the server on passive mode, waiting for connections.
+    // 10 = Backlog
+
+    if (listen(server_fd, 10) < 0)
+    {
+        perror("Failed to listen!");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("** Server listening on port %d **", PORT);
+
+    while (1)
+    {
+        printf("\nWaiting for connection...\n");
+
+        // ACCEPT: Blocks the connection until a client connects.
+        // When connects, creates a new socket to it client
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
+        {
+            perror("Fail in ACCEPT!");
+            continue;
+        }
+
+        // Reading the request
+        // Clear the buffer with 0s
+        char buffer[BUFFER_SIZE] = {0};
+
+        // Read the values sent by browser
+        val_read = read(new_socket, buffer, BUFFER_SIZE);
+        printf("\nMessage received:\n%s\n", buffer);
+
+        // Sending the request
+        //  Writes the string on client socket
+        write(new_socket, test, strlen(test));
+        printf("\n--> Response sent!\n");
+
+        // Closing the connection
+        close(new_socket);
+    }
+
+    return 0;
 }
