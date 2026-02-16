@@ -127,7 +127,6 @@ int main()
         printf("\n--> Response sent!\n");
 
         // Closing the connection
-        close(new_socket);
     }
 
     return 0;
